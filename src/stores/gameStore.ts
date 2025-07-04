@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GameState, GameActions, Duck } from '../types/game';
+import type { GameState, GameActions, Duck, DuckType } from '../types/game';
 import { calculateDebugRate, calculateOfflineProgress, canAffordUpgrade } from '../utils/calculations';
+import { initialUpgrades } from '../data/upgrades';
+import { createDuck, getDuckCost, isDuckUnlocked } from '../data/ducks';
 
 interface GameStore extends GameState, GameActions {}
 
@@ -10,7 +12,7 @@ const initialState: GameState = {
   codeQuality: 0,
   debugRate: 0,
   ducks: [],
-  upgrades: [],
+  upgrades: initialUpgrades,
   lastUpdate: Date.now(),
 };
 
@@ -34,11 +36,56 @@ export const useGameStore = create<GameStore>()(
       },
       
       incrementBugsFixed: (amount = 1) => {
-        set((state) => ({
-          bugsFixed: state.bugsFixed + amount,
-          codeQuality: state.codeQuality + (amount * 5),
-          lastUpdate: Date.now(),
-        }));
+        set((state) => {
+          const newBugsFixed = state.bugsFixed + amount;
+          
+          // Check for upgrade unlocks
+          const updatedUpgrades = state.upgrades.map(upgrade => {
+            if (!upgrade.unlocked) {
+              // Define unlock conditions based on bugs fixed
+              const unlockConditions: { [key: string]: number } = {
+                'debugging-efficiency': 50,
+                'duck-training': 100,
+                'premium-duck-feed': 250,
+                'duck-motivation': 500,
+                'bath-duck': 100,
+                'pirate-duck': 250,
+                'fancy-duck': 500,
+                'premium-duck': 1000,
+                'quantum-duck': 2500,
+                'cosmic-duck': 10000,
+                'ide-integration': 150,
+                'static-analysis': 400,
+                'ai-assistant': 1500,
+                'ergonomic-workspace': 200,
+                'noise-cancellation': 600,
+                'zen-garden': 2000,
+                'duck-specialization': 1200,
+                'duck-enlightenment': 5000
+              };
+              
+              const condition = unlockConditions[upgrade.id];
+              if (condition && newBugsFixed >= condition) {
+                // Also check if dependencies are met
+                const dependenciesMet = upgrade.dependencies.every(depId => 
+                  state.upgrades.find(u => u.id === depId)?.purchased || false
+                );
+                
+                if (dependenciesMet) {
+                  return { ...upgrade, unlocked: true };
+                }
+              }
+            }
+            return upgrade;
+          });
+          
+          return {
+            bugsFixed: newBugsFixed,
+            codeQuality: state.codeQuality + (amount * 5),
+            upgrades: updatedUpgrades,
+            lastUpdate: Date.now(),
+          };
+        });
       },
       
       addCodeQuality: (amount: number) => {
@@ -110,6 +157,15 @@ export const useGameStore = create<GameStore>()(
           return false;
         }
         
+        // Check dependencies
+        const dependenciesMet = upgrade.dependencies.every(depId => 
+          state.upgrades.find(u => u.id === depId)?.purchased || false
+        );
+        
+        if (!dependenciesMet) {
+          return false;
+        }
+        
         // Spend code quality
         const spendSuccess = get().spendCodeQuality(upgrade.cost);
         if (!spendSuccess) return false;
@@ -122,10 +178,25 @@ export const useGameStore = create<GameStore>()(
           lastUpdate: Date.now(),
         }));
         
+        // Unlock dependent upgrades
+        const newState = get();
+        const dependentUpgrades = newState.upgrades.filter(u => 
+          u.dependencies.includes(upgradeId) && !u.unlocked
+        );
+        
+        if (dependentUpgrades.length > 0) {
+          set((prevState) => ({
+            upgrades: prevState.upgrades.map(u => 
+              dependentUpgrades.some(dep => dep.id === u.id) ? { ...u, unlocked: true } : u
+            ),
+            lastUpdate: Date.now(),
+          }));
+        }
+        
         // Recalculate debug rate if needed
         if (upgrade.effect.target === 'debugRate' || upgrade.effect.target === 'duckEfficiency') {
-          const newState = get();
-          const newDebugRate = calculateDebugRate(newState.ducks, newState.upgrades);
+          const finalState = get();
+          const newDebugRate = calculateDebugRate(finalState.ducks, finalState.upgrades);
           set({ debugRate: newDebugRate });
         }
         
@@ -139,6 +210,31 @@ export const useGameStore = create<GameStore>()(
           ),
           lastUpdate: Date.now(),
         }));
+      },
+      
+      purchaseBasicRubberDuck: () => {
+        return get().purchaseDuck('rubber');
+      },
+      
+      purchaseDuck: (type: DuckType) => {
+        const state = get();
+        const ownedOfType = state.ducks.filter(d => d.type === type).length;
+        const duckCost = getDuckCost(type, ownedOfType);
+        
+        // Check if duck type is unlocked
+        if (!isDuckUnlocked(type, { bugsFixed: state.bugsFixed, codeQuality: state.codeQuality })) {
+          return false;
+        }
+        
+        if (state.codeQuality >= duckCost) {
+          const spendSuccess = get().spendCodeQuality(duckCost);
+          if (spendSuccess) {
+            const newDuck = createDuck(type);
+            get().addDuck(newDuck);
+            return true;
+          }
+        }
+        return false;
       },
       
       // Utility actions
@@ -184,12 +280,7 @@ export const useGameStore = create<GameStore>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // Calculate offline progress when the game loads
-          const progress = calculateOfflineProgress(state.lastUpdate, state.debugRate);
-          if (progress.bugsFixed > 0) {
-            state.bugsFixed += progress.bugsFixed;
-            state.codeQuality += progress.codeQuality;
-          }
+          // Just update the timestamp, don't calculate offline progress yet
           state.lastUpdate = Date.now();
         }
       },

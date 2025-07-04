@@ -1,10 +1,41 @@
 import type { Duck, Upgrade } from '../types/game';
+import { duckTypes } from '../data/ducks';
 
 export const calculateDebugRate = (ducks: Duck[], upgrades: Upgrade[]): number => {
-  // Base debug rate from ducks
-  const baseRate = ducks.reduce((total, duck) => total + duck.debugPower, 0);
+  // Calculate duck efficiency multiplier
+  const duckEfficiencyMultiplier = upgrades
+    .filter(upgrade => upgrade.purchased && upgrade.effect.target === 'duckEfficiency')
+    .reduce((total, upgrade) => {
+      if (upgrade.effect.type === 'multiplier') {
+        return total * upgrade.effect.value;
+      }
+      return total;
+    }, 1);
   
-  // Apply multipliers from upgrades
+  // Calculate special multipliers (like zen garden)
+  const specialMultiplier = upgrades
+    .filter(upgrade => upgrade.purchased && upgrade.effect.target === 'special')
+    .reduce((total, upgrade) => {
+      if (upgrade.effect.type === 'multiplier') {
+        return total * upgrade.effect.value;
+      }
+      return total;
+    }, 1);
+  
+  // Base debug rate from ducks (with efficiency bonuses and special bonuses)
+  const baseRate = ducks.reduce((total, duck) => {
+    let duckPower = duck.debugPower;
+    
+    // Apply duck-specific bonuses
+    const duckConfig = duckTypes[duck.type];
+    if (duckConfig.specialBonus.type === 'efficiencyMultiplier') {
+      duckPower *= duckConfig.specialBonus.value;
+    }
+    
+    return total + (duckPower * duckEfficiencyMultiplier);
+  }, 0);
+  
+  // Apply general debug rate multipliers
   const multipliers = upgrades
     .filter(upgrade => upgrade.purchased && upgrade.effect.target === 'debugRate')
     .reduce((total, upgrade) => {
@@ -24,7 +55,7 @@ export const calculateDebugRate = (ducks: Duck[], upgrades: Upgrade[]): number =
       return total;
     }, 0);
   
-  return (baseRate + additives) * multipliers;
+  return (baseRate + additives) * multipliers * specialMultiplier;
 };
 
 export const calculateOfflineProgress = (
@@ -54,12 +85,23 @@ export const calculateUpgradeCost = (baseCost: number, level: number): number =>
   return Math.floor(baseCost * Math.pow(1.15, level));
 };
 
+export const calculateDynamicUpgradeCost = (baseCost: number, purchased: number, scalingFactor: number = 1.2): number => {
+  // More aggressive scaling for dynamic upgrades
+  return Math.floor(baseCost * Math.pow(scalingFactor, purchased));
+};
+
 export const canAffordUpgrade = (currentCQ: number, upgradeCost: number): boolean => {
   return currentCQ >= upgradeCost;
 };
 
 export const calculateDuckEfficiency = (duck: Duck, upgrades: Upgrade[]): number => {
-  const baseEfficiency = duck.debugPower;
+  let baseEfficiency = duck.debugPower;
+  
+  // Apply duck-specific bonuses
+  const duckConfig = duckTypes[duck.type];
+  if (duckConfig.specialBonus.type === 'efficiencyMultiplier') {
+    baseEfficiency *= duckConfig.specialBonus.value;
+  }
   
   // Apply duck-specific upgrades
   const duckMultipliers = upgrades
@@ -76,6 +118,26 @@ export const calculateDuckEfficiency = (duck: Duck, upgrades: Upgrade[]): number
     }, 1);
   
   return baseEfficiency * duckMultipliers;
+};
+
+export const isDependencyMet = (upgrade: Upgrade, upgrades: Upgrade[]): boolean => {
+  return upgrade.dependencies.every(depId => 
+    upgrades.find(u => u.id === depId)?.purchased || false
+  );
+};
+
+export const getUpgradeScalingCost = (upgrade: Upgrade, timePurchased: number): number => {
+  // Different scaling for different upgrade types
+  const scalingFactors = {
+    duck: 1.15,
+    tool: 1.2,
+    environment: 1.25,
+    automation: 1.3,
+    prestige: 1.5
+  };
+  
+  const factor = scalingFactors[upgrade.type] || 1.2;
+  return Math.floor(upgrade.cost * Math.pow(factor, timePurchased));
 };
 
 export const formatNumber = (num: number): string => {

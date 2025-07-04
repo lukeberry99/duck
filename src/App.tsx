@@ -1,8 +1,18 @@
 import DebugButton from './components/DebugButton';
 import ResourceDisplay from './components/ResourceDisplay';
 import DebugLog from './components/DebugLog';
+import UpgradePanel from './components/UpgradePanel';
+import OfflineProgressModal from './components/OfflineProgressModal';
+import FloatingNumbers from './components/FloatingNumbers';
+import { useGameLoop } from './hooks/useGameLoop';
+import { useAutoSave } from './hooks/useAutoSave';
+import { useGameStore } from './stores/gameStore';
 
 export default function App() {
+  useGameLoop();
+  useAutoSave();
+  const bugsFixed = useGameStore((state) => state.bugsFixed);
+
   return (
     <div className="min-h-screen bg-gray-800 text-green-400 font-mono">
       <div className="container mx-auto px-4 py-8">
@@ -18,6 +28,7 @@ export default function App() {
             <div className="text-center">
               <DebugButton />
             </div>
+            <UpgradePanel />
           </div>
           
           {/* Right Panel - Debug Log */}
@@ -26,6 +37,9 @@ export default function App() {
           </div>
         </div>
       </div>
+      
+      <OfflineProgressModal />
+      <FloatingNumbers trigger={bugsFixed} />
     </div>
   );
 }

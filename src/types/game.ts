@@ -25,6 +25,7 @@ export interface Upgrade {
   purchased: boolean;
   unlocked: boolean;
   effect: UpgradeEffect;
+  dependencies: string[];
 }
 
 export interface UpgradeEffect {
@@ -38,6 +39,7 @@ export type DuckType =
   | 'bath'
   | 'pirate'
   | 'fancy'
+  | 'premium'
   | 'quantum'
   | 'cosmic';
 
@@ -63,9 +65,11 @@ export interface GameActions {
   // Upgrade actions
   purchaseUpgrade: (upgradeId: string) => boolean;
   unlockUpgrade: (upgradeId: string) => void;
+  purchaseBasicRubberDuck: () => boolean;
+  purchaseDuck: (type: DuckType) => boolean;
   
   // Utility actions
   calculateDebugRate: () => number;
-  calculateOfflineProgress: () => void;
+  calculateOfflineProgress: () => { bugsFixed: number; codeQuality: number; timeAway: number };
   reset: () => void;
 }
