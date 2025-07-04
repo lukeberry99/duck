@@ -1,37 +1,8 @@
-import { useEffect, useRef, useMemo } from 'react';
-
-interface LogEntry {
-  id: number;
-  timestamp: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-}
+import { useGameStore } from '../stores/gameStore';
+import type { LogEntry } from '../types/game';
 
 export default function DebugLog() {
-  const logs: LogEntry[] = useMemo(() => [
-    {
-      id: 1,
-      timestamp: new Date().toLocaleTimeString(),
-      message: 'Welcome to DuckOS: The Quacking debugging experience!',
-      type: 'info'
-    },
-    {
-      id: 2,
-      timestamp: new Date().toLocaleTimeString(),
-      message: 'Click the DEBUG CODE button to start fixing bugs.',
-      type: 'info'
-    }
-  ], []);
-  
-  const logEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [logs]);
+  const logs = useGameStore((state) => state.logs);
 
   // Future function for adding new log entries
   // const addLog = (message: string, type: LogEntry['type'] = 'info') => {
@@ -49,6 +20,7 @@ export default function DebugLog() {
       case 'success': return 'text-green-400';
       case 'warning': return 'text-yellow-400';
       case 'error': return 'text-red-400';
+      case 'duck': return 'text-blue-400';
       default: return 'text-green-400';
     }
   };
@@ -59,10 +31,9 @@ export default function DebugLog() {
       <div className="space-y-1">
         {logs.map((log) => (
           <div key={log.id} className={`${getLogColor(log.type)} leading-relaxed`}>
-            <span className="text-gray-500">[{log.timestamp}]</span> {log.message}
+            <span className="text-gray-500">[{new Date(log.timestamp).toLocaleTimeString()}]</span> {log.message}
           </div>
         ))}
-        <div ref={logEndRef} />
       </div>
     </div>
   );

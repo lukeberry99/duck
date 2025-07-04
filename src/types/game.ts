@@ -1,9 +1,18 @@
+export interface LogEntry {
+  id: string;
+  timestamp: number;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'duck';
+  phase?: 'discovery' | 'consultant' | 'whisperer' | 'reality';
+}
+
 export interface GameState {
   bugsFixed: number;
   codeQuality: number;
   debugRate: number;
   ducks: Duck[];
   upgrades: Upgrade[];
+  logs: LogEntry[];
   lastUpdate: number;
 }
 
@@ -67,6 +76,10 @@ export interface GameActions {
   unlockUpgrade: (upgradeId: string) => void;
   purchaseBasicRubberDuck: () => boolean;
   purchaseDuck: (type: DuckType) => boolean;
+  
+  // Log actions
+  addLogEntry: (message: string, type: LogEntry['type'], phase?: LogEntry['phase']) => void;
+  clearLogs: () => void;
   
   // Utility actions
   calculateDebugRate: () => number;

@@ -1,9 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GameState, GameActions, Duck, DuckType } from '../types/game';
+import type { GameState, GameActions, Duck, DuckType, LogEntry } from '../types/game';
 import { calculateDebugRate, calculateOfflineProgress, canAffordUpgrade } from '../utils/calculations';
 import { initialUpgrades } from '../data/upgrades';
 import { createDuck, getDuckCost, isDuckUnlocked } from '../data/ducks';
+import { 
+  getMessagesForPhase, 
+  getRandomMessage, 
+  getDuckDialogue, 
+  generalMessages,
+  bugDescriptions
+} from '../data/lore';
 
 interface GameStore extends GameState, GameActions {}
 
@@ -13,6 +20,22 @@ const initialState: GameState = {
   debugRate: 0,
   ducks: [],
   upgrades: initialUpgrades,
+  logs: [
+    {
+      id: 'welcome',
+      timestamp: Date.now(),
+      message: 'Welcome to DuckOS: The Quacking debugging experience!',
+      type: 'info',
+      phase: 'discovery'
+    },
+    {
+      id: 'start',
+      timestamp: Date.now() + 1,
+      message: 'Click the DEBUG CODE button to start fixing bugs.',
+      type: 'info',
+      phase: 'discovery'
+    }
+  ],
   lastUpdate: Date.now(),
 };
 
@@ -27,9 +50,23 @@ export const useGameStore = create<GameStore>()(
           const newBugsFixed = state.bugsFixed + 1;
           const newCodeQuality = state.codeQuality + 5; // 5 CQ per bug fixed
           
+          // Add a log entry for the debug action
+          const debugMessage = getRandomDebugMessage(newBugsFixed, state.ducks);
+          const newLogEntry: LogEntry = {
+            id: `debug-${Date.now()}`,
+            timestamp: Date.now(),
+            message: debugMessage,
+            type: 'success',
+            phase: getCurrentPhase(newBugsFixed)
+          };
+          
+          // Keep only the last 100 log entries to prevent memory issues
+          const updatedLogs = [...state.logs, newLogEntry].slice(-100);
+          
           return {
             bugsFixed: newBugsFixed,
             codeQuality: newCodeQuality,
+            logs: updatedLogs,
             lastUpdate: Date.now(),
           };
         });
@@ -86,6 +123,17 @@ export const useGameStore = create<GameStore>()(
             lastUpdate: Date.now(),
           };
         });
+        
+        // Check for milestone messages after state update
+        const currentState = get();
+        const phaseMessages = getMessagesForPhase(currentState.bugsFixed);
+        const milestoneMessage = phaseMessages.find(msg => 
+          msg.trigger?.type === 'bugsFixed' && msg.trigger.value === currentState.bugsFixed
+        );
+        
+        if (milestoneMessage) {
+          get().addLogEntry(milestoneMessage.message, milestoneMessage.type);
+        }
       },
       
       addCodeQuality: (amount: number) => {
@@ -113,6 +161,33 @@ export const useGameStore = create<GameStore>()(
           ducks: [...state.ducks, duck],
           lastUpdate: Date.now(),
         }));
+        
+        // Add log entry for duck purchase
+        const duckTypeNames = {
+          rubber: 'Basic Rubber Duck',
+          bath: 'Bath Duck',
+          pirate: 'Pirate Duck',
+          fancy: 'Fancy Duck',
+          premium: 'Premium Duck',
+          quantum: 'Quantum Duck',
+          cosmic: 'Cosmic Duck'
+        };
+        
+        get().addLogEntry(
+          `${duckTypeNames[duck.type]} joined your debugging team!`,
+          'success'
+        );
+        
+        // Check for duck-specific milestone messages
+        const currentState = get();
+        const phaseMessages = getMessagesForPhase(currentState.bugsFixed);
+        const duckMessage = phaseMessages.find(msg => 
+          msg.trigger?.type === 'duckPurchased' && msg.trigger.value === duck.type
+        );
+        
+        if (duckMessage) {
+          get().addLogEntry(duckMessage.message, 'warning');
+        }
         
         // Recalculate debug rate
         const newState = get();
@@ -260,6 +335,34 @@ export const useGameStore = create<GameStore>()(
         return progress;
       },
       
+      // Log actions
+      addLogEntry: (message: string, type: LogEntry['type'], phase?: LogEntry['phase']) => {
+        set((state) => {
+          const newLogEntry: LogEntry = {
+            id: `log-${Date.now()}`,
+            timestamp: Date.now(),
+            message,
+            type,
+            phase: phase || getCurrentPhase(state.bugsFixed)
+          };
+          
+          // Keep only the last 100 log entries
+          const updatedLogs = [...state.logs, newLogEntry].slice(-100);
+          
+          return {
+            logs: updatedLogs,
+            lastUpdate: Date.now(),
+          };
+        });
+      },
+      
+      clearLogs: () => {
+        set({
+          logs: [],
+          lastUpdate: Date.now(),
+        });
+      },
+      
       reset: () => {
         set({
           ...initialState,
@@ -276,6 +379,7 @@ export const useGameStore = create<GameStore>()(
         debugRate: state.debugRate,
         ducks: state.ducks,
         upgrades: state.upgrades,
+        logs: state.logs,
         lastUpdate: state.lastUpdate,
       }),
       onRehydrateStorage: () => (state) => {
@@ -287,3 +391,47 @@ export const useGameStore = create<GameStore>()(
     }
   )
 );
+
+// Helper functions for narrative system
+const getCurrentPhase = (bugsFixed: number): LogEntry['phase'] => {
+  if (bugsFixed >= 10000) return 'reality';
+  if (bugsFixed >= 2500) return 'whisperer';
+  if (bugsFixed >= 100) return 'consultant';
+  return 'discovery';
+};
+
+const getRandomDebugMessage = (bugsFixed: number, ducks: Duck[]): string => {
+  // Get phase-specific messages
+  const phaseMessages = getMessagesForPhase(bugsFixed);
+  
+  // Check for milestone messages
+  const milestoneMessage = phaseMessages.find(msg => 
+    msg.trigger?.type === 'bugsFixed' && msg.trigger.value === bugsFixed
+  );
+  
+  if (milestoneMessage) {
+    return milestoneMessage.message;
+  }
+  
+  // 30% chance for duck dialogue if ducks are present
+  if (ducks.length > 0 && Math.random() < 0.3) {
+    const randomDuck = ducks[Math.floor(Math.random() * ducks.length)];
+    const dialogue = getDuckDialogue(randomDuck.type);
+    if (dialogue) {
+      return `${dialogue.squeak} ("${dialogue.translation}")`;
+    }
+  }
+  
+  // 20% chance for escalating bug description
+  if (Math.random() < 0.2) {
+    const bugIndex = Math.min(
+      Math.floor(bugsFixed / 100), 
+      bugDescriptions.length - 1
+    );
+    return `Fixed: ${bugDescriptions[bugIndex]}`;
+  }
+  
+  // Default to general messages
+  const randomMessage = getRandomMessage(generalMessages);
+  return randomMessage ? randomMessage.message : 'Bug fixed successfully!';
+};

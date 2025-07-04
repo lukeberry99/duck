@@ -2,8 +2,10 @@ import { useGameStore } from '../stores/gameStore';
 import { formatNumber, isDependencyMet } from '../utils/calculations';
 import { duckTypes, getDuckCost, isDuckUnlocked } from '../data/ducks';
 import type { DuckType } from '../types/game';
+import { useState } from 'react';
 
 export default function UpgradePanel() {
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const upgrades = useGameStore((state) => state.upgrades);
   const codeQuality = useGameStore((state) => state.codeQuality);
   const bugsFixed = useGameStore((state) => state.bugsFixed);
@@ -29,6 +31,30 @@ export default function UpgradePanel() {
   );
 
   const getDuckCount = (type: DuckType) => ducks.filter(d => d.type === type).length;
+
+  const getDuckIcon = (type: DuckType) => {
+    const icons = {
+      rubber: '🦆',
+      bath: '🛁',
+      pirate: '🏴‍☠️',
+      fancy: '🎩',
+      premium: '⭐',
+      quantum: '⚛️',
+      cosmic: '🌌'
+    };
+    return icons[type] || '🦆';
+  };
+
+  const getUpgradeIcon = (type: string) => {
+    const icons = {
+      duck: '🦆',
+      tool: '🔧',
+      environment: '🏠',
+      automation: '⚙️',
+      prestige: '✨'
+    };
+    return icons[type as keyof typeof icons] || '📦';
+  };
 
   if (availableUpgrades.length === 0 && availableDucks.length === 0) {
     return (
@@ -61,18 +87,23 @@ export default function UpgradePanel() {
                     canAfford 
                       ? 'border-green-400 bg-gray-800 hover:bg-gray-700' 
                       : 'border-gray-600 bg-gray-800 opacity-50'
-                  } transition-colors`}
+                  } transition-all duration-200 relative`}
+                  onMouseEnter={() => setHoveredItem(`duck-${duckType}`)}
+                  onMouseLeave={() => setHoveredItem(null)}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="text-green-400 font-semibold">{duckInfo.name}</h4>
-                      <p className="text-gray-400 text-sm">{duckInfo.description}</p>
-                      <p className="text-blue-400 text-xs mt-1">
-                        {duckInfo.specialization} • {duckInfo.baseDebugPower} debug/sec
-                      </p>
-                      {owned > 0 && (
-                        <p className="text-yellow-400 text-xs">Owned: {owned}</p>
-                      )}
+                    <div className="flex items-start gap-2">
+                      <div className="text-2xl">{getDuckIcon(duckType)}</div>
+                      <div>
+                        <h4 className="text-green-400 font-semibold">{duckInfo.name}</h4>
+                        <p className="text-gray-400 text-sm">{duckInfo.description}</p>
+                        <p className="text-blue-400 text-xs mt-1">
+                          {duckInfo.specialization} • {duckInfo.baseDebugPower} debug/sec
+                        </p>
+                        {owned > 0 && (
+                          <p className="text-yellow-400 text-xs">Owned: {owned}</p>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="text-yellow-400 font-bold">
@@ -80,6 +111,17 @@ export default function UpgradePanel() {
                       </div>
                     </div>
                   </div>
+                  
+                  {hoveredItem === `duck-${duckType}` && (
+                    <div className="absolute z-10 bg-gray-900 border border-green-400 rounded p-2 -top-2 left-full ml-2 w-64 shadow-lg">
+                      <p className="text-xs text-gray-300">
+                        <strong>Specialization:</strong> {duckInfo.specialization}<br/>
+                        <strong>Base Power:</strong> {duckInfo.baseDebugPower} debug/sec<br/>
+                        <strong>Cost scaling:</strong> Increases by ~2x per duck<br/>
+                        <strong>Efficiency:</strong> Works automatically when purchased
+                      </p>
+                    </div>
+                  )}
                   
                   <button
                     onClick={() => handleDuckPurchase(duckType)}
@@ -114,17 +156,22 @@ export default function UpgradePanel() {
                     canAfford 
                       ? 'border-green-400 bg-gray-800 hover:bg-gray-700' 
                       : 'border-gray-600 bg-gray-800 opacity-50'
-                  } transition-colors`}
+                  } transition-all duration-200 relative`}
+                  onMouseEnter={() => setHoveredItem(`upgrade-${upgrade.id}`)}
+                  onMouseLeave={() => setHoveredItem(null)}
                 >
                   <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="text-green-400 font-semibold">{upgrade.name}</h4>
-                      <p className="text-gray-400 text-sm">{upgrade.description}</p>
-                      {upgrade.dependencies.length > 0 && (
-                        <p className="text-blue-400 text-xs mt-1">
-                          Requires: {upgrade.dependencies.join(', ')}
-                        </p>
-                      )}
+                    <div className="flex items-start gap-2">
+                      <div className="text-2xl">{getUpgradeIcon(upgrade.type)}</div>
+                      <div>
+                        <h4 className="text-green-400 font-semibold">{upgrade.name}</h4>
+                        <p className="text-gray-400 text-sm">{upgrade.description}</p>
+                        {upgrade.dependencies.length > 0 && (
+                          <p className="text-blue-400 text-xs mt-1">
+                            Requires: {upgrade.dependencies.join(', ')}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="text-yellow-400 font-bold">
@@ -132,6 +179,26 @@ export default function UpgradePanel() {
                       </div>
                     </div>
                   </div>
+                  
+                  {hoveredItem === `upgrade-${upgrade.id}` && (
+                    <div className="absolute z-10 bg-gray-900 border border-green-400 rounded p-2 -top-2 left-full ml-2 w-64 shadow-lg">
+                      <p className="text-xs text-gray-300">
+                        <strong>Type:</strong> {upgrade.type}<br/>
+                        <strong>Effect:</strong> {upgrade.effect.type === 'multiplier' ? `${upgrade.effect.value}x` : `+${upgrade.effect.value}`} {upgrade.effect.target}<br/>
+                        {upgrade.dependencies.length > 0 && (
+                          <>
+                            <strong>Dependencies:</strong><br/>
+                            {upgrade.dependencies.map((dep, index) => (
+                              <span key={`dep-${index}`}>
+                                {index > 0 && <br />}
+                                <span className="text-blue-400">• {dep}</span>
+                              </span>
+                            ))}
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  )}
                   
                   <button
                     onClick={() => handlePurchase(upgrade.id)}
