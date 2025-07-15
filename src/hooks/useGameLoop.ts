@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useGameStore } from '../stores/gameStore';
 
 export const useGameLoop = (tickInterval: number = 1000) => {
-  const intervalRef = useRef<number | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const { debugRate, incrementBugsFixed, calculateOfflineProgress } = useGameStore();
 
   useEffect(() => {

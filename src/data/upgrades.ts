@@ -21,14 +21,14 @@ export const initialUpgrades: Upgrade[] = [
     id: 'bath-duck',
     type: 'duck',
     name: 'Bath Duck',
-    description: 'Frontend specialist with waterproof styling. Adds 2 debug per second.',
+    description: 'Frontend specialist with waterproof styling. Adds 2 debug per manual click.',
     cost: 500,
     purchased: false,
     unlocked: false,
     effect: {
-      type: 'unlock',
-      target: 'special',
-      value: 0
+      type: 'additive',
+      target: 'debugRate',
+      value: 2
     },
     dependencies: []
   },
@@ -36,14 +36,14 @@ export const initialUpgrades: Upgrade[] = [
     id: 'pirate-duck',
     type: 'duck',
     name: 'Pirate Duck',
-    description: 'Security expert with an eye for vulnerabilities. Adds 3 debug per second.',
+    description: 'Security expert with an eye for vulnerabilities. Adds 3 debug per manual click.',
     cost: 1000,
     purchased: false,
     unlocked: false,
     effect: {
-      type: 'unlock',
-      target: 'special',
-      value: 0
+      type: 'additive',
+      target: 'debugRate',
+      value: 3
     },
     dependencies: []
   },
@@ -51,14 +51,14 @@ export const initialUpgrades: Upgrade[] = [
     id: 'fancy-duck',
     type: 'duck',
     name: 'Fancy Duck',
-    description: 'Enterprise debugging with premium features. Adds 5 debug per second.',
+    description: 'Enterprise debugging with premium features. Adds 5 debug per manual click.',
     cost: 2500,
     purchased: false,
     unlocked: false,
     effect: {
-      type: 'unlock',
-      target: 'special',
-      value: 0
+      type: 'additive',
+      target: 'debugRate',
+      value: 5
     },
     dependencies: []
   },
@@ -66,14 +66,14 @@ export const initialUpgrades: Upgrade[] = [
     id: 'premium-duck',
     type: 'duck',
     name: 'Premium Duck',
-    description: '2x efficiency with distinguished appearance. Adds 4 debug per second.',
+    description: '2x efficiency with distinguished appearance. Adds 4 debug per manual click.',
     cost: 5000,
     purchased: false,
     unlocked: false,
     effect: {
-      type: 'unlock',
-      target: 'special',
-      value: 0
+      type: 'additive',
+      target: 'debugRate',
+      value: 4
     },
     dependencies: []
   },
@@ -81,14 +81,14 @@ export const initialUpgrades: Upgrade[] = [
     id: 'quantum-duck',
     type: 'duck',
     name: 'Quantum Duck',
-    description: 'Handles paradoxes and quantum bugs. Adds 10 debug per second.',
+    description: 'Handles paradoxes and quantum bugs. Adds 10 debug per manual click.',
     cost: 10000,
     purchased: false,
     unlocked: false,
     effect: {
-      type: 'unlock',
-      target: 'special',
-      value: 0
+      type: 'additive',
+      target: 'debugRate',
+      value: 10
     },
     dependencies: []
   },
@@ -96,14 +96,14 @@ export const initialUpgrades: Upgrade[] = [
     id: 'cosmic-duck',
     type: 'duck',
     name: 'Cosmic Duck',
-    description: 'Universe-level debugging capabilities. Adds 25 debug per second.',
+    description: 'Universe-level debugging capabilities. Adds 25 debug per manual click.',
     cost: 50000,
     purchased: false,
     unlocked: false,
     effect: {
-      type: 'unlock',
-      target: 'special',
-      value: 0
+      type: 'additive',
+      target: 'debugRate',
+      value: 25
     },
     dependencies: []
   },

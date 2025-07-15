@@ -7,7 +7,12 @@ import FloatingNumbers from './components/FloatingNumbers';
 import ProgressIndicators from './components/ProgressIndicators';
 import DuckCollection from './components/DuckCollection';
 import StatisticsPanel from './components/StatisticsPanel';
+import PrestigePanel from './components/PrestigePanel';
 import DebugMenu from './components/DebugMenu';
+import CodeTypeSelector from './components/CodeTypeSelector';
+// import DebugSessionManager from './components/DebugSessionManager';
+import BatchOperationsPanel from './components/BatchOperationsPanel';
+import PerformanceChallenges from './components/PerformanceChallenges';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useAutoSave } from './hooks/useAutoSave';
 import { useDebugMenu } from './hooks/useDebugMenu';
@@ -15,17 +20,20 @@ import { useGameStore } from './stores/gameStore';
 import { useState } from 'react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'debug' | 'collection' | 'stats'>('debug');
+  const [activeTab, setActiveTab] = useState<'debug' | 'collection' | 'prestige' | 'stats' | 'advanced'>('debug');
   useGameLoop();
   useAutoSave();
   const { isDebugMenuOpen, closeDebugMenu } = useDebugMenu();
   const bugsFixed = useGameStore((state) => state.bugsFixed);
   const ducks = useGameStore((state) => state.ducks);
+  const canRefactor = useGameStore((state) => state.canRefactor);
 
   const tabs = [
     { id: 'debug', label: 'Debug', icon: '🐛' },
     { id: 'collection', label: 'Ducks', icon: '🦆', badge: ducks.length > 0 ? ducks.length : null },
-    { id: 'stats', label: 'Stats', icon: '📊' }
+    { id: 'prestige', label: 'Refactor', icon: '🔄', badge: canRefactor() ? '!' : undefined },
+    { id: 'stats', label: 'Stats', icon: '📊' },
+    { id: 'advanced', label: 'Advanced', icon: '⚡', badge: bugsFixed >= 150 ? '!' : undefined }
   ];
 
   return (
@@ -75,11 +83,16 @@ export default function App() {
               <DebugButton />
             </div>
             <ProgressIndicators />
+            {bugsFixed >= 150 && <CodeTypeSelector />}
           </div>
           
-          {/* Middle Panel - Upgrades */}
+          {/* Middle Panel - Upgrades and Advanced Features */}
           <div className="lg:col-span-1 space-y-6">
             <UpgradePanel />
+            {canRefactor() && <PrestigePanel />}
+            {/* TODO: Implement duck assignment challenges - assign specific ducks to debugging tasks */}
+            {/* {bugsFixed >= 150 && <DebugSessionManager />} */}
+            {bugsFixed >= 200 && <BatchOperationsPanel />}
           </div>
           
           {/* Right Panel - Debug Log and Collections */}
@@ -89,6 +102,7 @@ export default function App() {
               <DuckCollection />
               <StatisticsPanel />
             </div>
+            {bugsFixed >= 300 && <PerformanceChallenges />}
           </div>
         </div>
 
@@ -115,9 +129,25 @@ export default function App() {
             </div>
           )}
 
+          {activeTab === 'prestige' && (
+            <div className="space-y-6">
+              <PrestigePanel />
+            </div>
+          )}
+
           {activeTab === 'stats' && (
             <div className="space-y-6">
               <StatisticsPanel />
+            </div>
+          )}
+
+          {activeTab === 'advanced' && (
+            <div className="space-y-6">
+              <CodeTypeSelector />
+              {/* TODO: Implement duck assignment challenges - assign specific ducks to debugging tasks */}
+              {/* <DebugSessionManager /> */}
+              <BatchOperationsPanel />
+              <PerformanceChallenges />
             </div>
           )}
         </div>

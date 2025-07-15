@@ -1,4 +1,4 @@
-import type { Duck, DuckType } from '../types/game';
+import type { Duck, DuckType, CodeType } from '../types/game';
 
 export const createDuck = (type: DuckType): Duck => {
   const duckConfig = duckTypes[type];
@@ -8,7 +8,9 @@ export const createDuck = (type: DuckType): Duck => {
     level: 1,
     debugPower: duckConfig.baseDebugPower,
     specialization: duckConfig.specialization,
-    acquired: Date.now()
+    acquired: Date.now(),
+    codeTypeSpecialty: duckConfig.codeTypeSpecialty,
+    specializationBonus: duckConfig.specializationBonus || 1.0
   };
 };
 
@@ -22,7 +24,9 @@ export const duckTypes = {
     baseDebugPower: 1,
     baseCost: 100,
     unlockCondition: { type: 'bugsFixed', value: 0 },
-    specialBonus: { type: 'none', value: 0 }
+    specialBonus: { type: 'none', value: 0 },
+    codeTypeSpecialty: undefined,
+    specializationBonus: 1.0
   },
   bath: {
     name: 'Bath Duck',
@@ -31,7 +35,9 @@ export const duckTypes = {
     baseDebugPower: 2,
     baseCost: 500,
     unlockCondition: { type: 'bugsFixed', value: 100 },
-    specialBonus: { type: 'webBugMultiplier', value: 2 }
+    specialBonus: { type: 'webBugMultiplier', value: 2 },
+    codeTypeSpecialty: 'web' as CodeType,
+    specializationBonus: 1.5
   },
   pirate: {
     name: 'Pirate Duck',
@@ -40,7 +46,9 @@ export const duckTypes = {
     baseDebugPower: 3,
     baseCost: 1000,
     unlockCondition: { type: 'bugsFixed', value: 250 },
-    specialBonus: { type: 'criticalBugChance', value: 0.1 }
+    specialBonus: { type: 'criticalBugChance', value: 0.1 },
+    codeTypeSpecialty: 'backend' as CodeType,
+    specializationBonus: 1.4
   },
   fancy: {
     name: 'Fancy Duck',
@@ -49,7 +57,9 @@ export const duckTypes = {
     baseDebugPower: 5,
     baseCost: 2500,
     unlockCondition: { type: 'bugsFixed', value: 500 },
-    specialBonus: { type: 'codeQualityBonus', value: 2 }
+    specialBonus: { type: 'codeQualityBonus', value: 2 },
+    codeTypeSpecialty: 'backend' as CodeType,
+    specializationBonus: 1.3
   },
   premium: {
     name: 'Premium Duck',
@@ -58,7 +68,9 @@ export const duckTypes = {
     baseDebugPower: 4,
     baseCost: 5000,
     unlockCondition: { type: 'bugsFixed', value: 1000 },
-    specialBonus: { type: 'efficiencyMultiplier', value: 2 }
+    specialBonus: { type: 'efficiencyMultiplier', value: 2 },
+    codeTypeSpecialty: 'mobile' as CodeType,
+    specializationBonus: 1.6
   },
   quantum: {
     name: 'Quantum Duck',
@@ -67,7 +79,9 @@ export const duckTypes = {
     baseDebugPower: 10,
     baseCost: 10000,
     unlockCondition: { type: 'bugsFixed', value: 2500 },
-    specialBonus: { type: 'quantumEntanglement', value: 0.05 }
+    specialBonus: { type: 'quantumEntanglement', value: 0.05 },
+    codeTypeSpecialty: 'aiml' as CodeType,
+    specializationBonus: 2.0
   },
   cosmic: {
     name: 'Cosmic Duck',
@@ -76,7 +90,9 @@ export const duckTypes = {
     baseDebugPower: 25,
     baseCost: 50000,
     unlockCondition: { type: 'bugsFixed', value: 10000 },
-    specialBonus: { type: 'universalDebugger', value: 1.5 }
+    specialBonus: { type: 'universalDebugger', value: 1.5 },
+    codeTypeSpecialty: undefined,
+    specializationBonus: 3.0
   }
 };
 
@@ -85,14 +101,14 @@ export const getDuckCost = (type: DuckType, owned: number): number => {
   return Math.floor(baseCost * Math.pow(1.15, owned));
 };
 
-export const isDuckUnlocked = (type: DuckType, gameState: { bugsFixed: number; codeQuality: number }): boolean => {
+export const isDuckUnlocked = (type: DuckType, gameState: { bugsFixed: number; codeQuality: number; achievements: { peakBugsFixed: number; peakCodeQuality: number; peakDebugRate: number } }): boolean => {
   const condition = duckTypes[type].unlockCondition;
   
   switch (condition.type) {
     case 'bugsFixed':
-      return gameState.bugsFixed >= condition.value;
+      return gameState.achievements.peakBugsFixed >= condition.value;
     case 'codeQuality':
-      return gameState.codeQuality >= condition.value;
+      return gameState.achievements.peakCodeQuality >= condition.value;
     default:
       return true;
   }

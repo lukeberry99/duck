@@ -1,26 +1,58 @@
-import type { Duck, Upgrade } from '../types/game';
+import type { Duck, Upgrade, PrestigeUpgrade } from '../types/game';
 import { duckTypes } from '../data/ducks';
+import { calculatePrestigeMultipliers } from '../data/prestigeUpgrades';
 
-export const calculateDebugRate = (ducks: Duck[], upgrades: Upgrade[]): number => {
+export interface UpgradeEffects {
+  debugRate: {
+    additive: number;
+    multiplier: number;
+  };
+  codeQuality: {
+    additive: number;
+    multiplier: number;
+  };
+  duckEfficiency: {
+    additive: number;
+    multiplier: number;
+  };
+  special: {
+    additive: number;
+    multiplier: number;
+  };
+}
+
+export const calculateUpgradeEffects = (upgrades: Upgrade[]): UpgradeEffects => {
+  const effects: UpgradeEffects = {
+    debugRate: { additive: 0, multiplier: 1 },
+    codeQuality: { additive: 0, multiplier: 1 },
+    duckEfficiency: { additive: 0, multiplier: 1 },
+    special: { additive: 0, multiplier: 1 }
+  };
+
+  upgrades.forEach(upgrade => {
+    if (!upgrade.purchased) return;
+
+    const target = upgrade.effect.target as keyof UpgradeEffects;
+    if (!effects[target]) return;
+
+    if (upgrade.effect.type === 'additive') {
+      effects[target].additive += upgrade.effect.value;
+    } else if (upgrade.effect.type === 'multiplier') {
+      effects[target].multiplier *= upgrade.effect.value;
+    }
+  });
+
+  return effects;
+};
+
+export const calculateDebugRate = (ducks: Duck[], upgrades: Upgrade[], prestigeUpgrades?: PrestigeUpgrade[]): number => {
+  const effects = calculateUpgradeEffects(upgrades);
+  
   // Calculate duck efficiency multiplier
-  const duckEfficiencyMultiplier = upgrades
-    .filter(upgrade => upgrade.purchased && upgrade.effect.target === 'duckEfficiency')
-    .reduce((total, upgrade) => {
-      if (upgrade.effect.type === 'multiplier') {
-        return total * upgrade.effect.value;
-      }
-      return total;
-    }, 1);
+  const duckEfficiencyMultiplier = effects.duckEfficiency.multiplier;
   
   // Calculate special multipliers (like zen garden)
-  const specialMultiplier = upgrades
-    .filter(upgrade => upgrade.purchased && upgrade.effect.target === 'special')
-    .reduce((total, upgrade) => {
-      if (upgrade.effect.type === 'multiplier') {
-        return total * upgrade.effect.value;
-      }
-      return total;
-    }, 1);
+  const specialMultiplier = effects.special.multiplier;
   
   // Base debug rate from ducks (with efficiency bonuses and special bonuses)
   const baseRate = ducks.reduce((total, duck) => {
@@ -35,27 +67,18 @@ export const calculateDebugRate = (ducks: Duck[], upgrades: Upgrade[]): number =
     return total + (duckPower * duckEfficiencyMultiplier);
   }, 0);
   
-  // Apply general debug rate multipliers
-  const multipliers = upgrades
-    .filter(upgrade => upgrade.purchased && upgrade.effect.target === 'debugRate')
-    .reduce((total, upgrade) => {
-      if (upgrade.effect.type === 'multiplier') {
-        return total * upgrade.effect.value;
-      }
-      return total;
-    }, 1);
+  // Apply debug rate effects
+  const debugRateMultiplier = effects.debugRate.multiplier;
+  const debugRateAdditive = effects.debugRate.additive;
   
-  // Apply additive bonuses
-  const additives = upgrades
-    .filter(upgrade => upgrade.purchased && upgrade.effect.target === 'debugRate')
-    .reduce((total, upgrade) => {
-      if (upgrade.effect.type === 'additive') {
-        return total + upgrade.effect.value;
-      }
-      return total;
-    }, 0);
+  // Apply prestige multipliers if available
+  let prestigeMultiplier = 1;
+  if (prestigeUpgrades) {
+    const prestigeMultipliers = calculatePrestigeMultipliers(prestigeUpgrades);
+    prestigeMultiplier = prestigeMultipliers.debugRate;
+  }
   
-  return (baseRate + additives) * multipliers * specialMultiplier;
+  return (baseRate + debugRateAdditive) * debugRateMultiplier * specialMultiplier * prestigeMultiplier;
 };
 
 export const calculateOfflineProgress = (
@@ -95,6 +118,7 @@ export const canAffordUpgrade = (currentCQ: number, upgradeCost: number): boolea
 };
 
 export const calculateDuckEfficiency = (duck: Duck, upgrades: Upgrade[]): number => {
+  const effects = calculateUpgradeEffects(upgrades);
   let baseEfficiency = duck.debugPower;
   
   // Apply duck-specific bonuses
@@ -103,21 +127,8 @@ export const calculateDuckEfficiency = (duck: Duck, upgrades: Upgrade[]): number
     baseEfficiency *= duckConfig.specialBonus.value;
   }
   
-  // Apply duck-specific upgrades
-  const duckMultipliers = upgrades
-    .filter(upgrade => 
-      upgrade.purchased && 
-      upgrade.effect.target === 'duckEfficiency' &&
-      upgrade.type === 'duck'
-    )
-    .reduce((total, upgrade) => {
-      if (upgrade.effect.type === 'multiplier') {
-        return total * upgrade.effect.value;
-      }
-      return total;
-    }, 1);
-  
-  return baseEfficiency * duckMultipliers;
+  // Apply duck efficiency multipliers
+  return baseEfficiency * effects.duckEfficiency.multiplier;
 };
 
 export const isDependencyMet = (upgrade: Upgrade, upgrades: Upgrade[]): boolean => {
