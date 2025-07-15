@@ -1,5 +1,5 @@
 import { useGameStore } from '../stores/gameStore';
-import { formatNumber, formatRate, calculateUpgradeEffects } from '../utils/calculations';
+import { formatNumber, formatRate, calculateClickPower } from '../utils/calculations';
 
 export default function ResourceDisplay() {
   const bugsFixed = useGameStore((state) => state.bugsFixed);
@@ -8,19 +8,14 @@ export default function ResourceDisplay() {
   const architecturePoints = useGameStore((state) => state.architecturePoints);
   const ducks = useGameStore((state) => state.ducks);
   const upgrades = useGameStore((state) => state.upgrades);
+  const clickStamina = useGameStore((state) => state.clickStamina);
+  const maxClickStamina = useGameStore((state) => state.maxClickStamina);
   
-  const upgradeEffects = calculateUpgradeEffects(upgrades);
-  
-  // Calculate manual click power
-  const baseClickPower = 1;
-  const clickPowerBonus = upgradeEffects.debugRate.additive;
-  const clickPowerMultiplier = upgradeEffects.debugRate.multiplier;
-  const specialMultiplier = upgradeEffects.special.multiplier;
-  const totalClickPower = Math.floor((baseClickPower + clickPowerBonus) * clickPowerMultiplier * specialMultiplier);
+  const totalClickPower = calculateClickPower(upgrades);
+  const staminaPercentage = (clickStamina / maxClickStamina) * 100;
   
   const isAutoDebugging = debugRate > 0 && ducks.length > 0;
   const hasArchitecturePoints = architecturePoints > 0;
-  const hasUpgrades = totalClickPower > 1 || upgradeEffects.codeQuality.multiplier > 1 || upgradeEffects.duckEfficiency.multiplier > 1;
 
   return (
     <div className="bg-gray-900 p-4 rounded-lg border border-green-400 font-mono">
@@ -52,55 +47,33 @@ export default function ResourceDisplay() {
         )}
       </div>
       
-      {/* Click Power Indicator */}
-      {totalClickPower > 1 && (
-        <div className="mt-4 text-center">
-          <div className="text-blue-400 text-sm">
-            Manual Click Power: <span className="font-bold">{totalClickPower}</span> bug{totalClickPower !== 1 ? 's' : ''}
-            {totalClickPower > 1 && (
-              <span className="text-xs text-gray-400 ml-1">
-                (1 + {clickPowerBonus} × {clickPowerMultiplier.toFixed(1)} × {specialMultiplier.toFixed(1)})
-              </span>
-            )}
+      {/* Click Power and Stamina */}
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="text-center">
+          <div className="text-blue-400 text-sm">Click Power</div>
+          <div className="text-blue-300 text-lg font-bold">{totalClickPower}</div>
+          <div className="text-gray-400 text-xs">bugs per click</div>
+        </div>
+        <div className="text-center">
+          <div className="text-red-400 text-sm">Stamina</div>
+          <div className="text-red-300 text-lg font-bold">{clickStamina}/{maxClickStamina}</div>
+          <div className="w-full bg-gray-700 rounded-full h-2 mt-1">
+            <div 
+              className={`h-2 rounded-full transition-all duration-300 ${
+                staminaPercentage > 60 ? 'bg-green-500' : 
+                staminaPercentage > 30 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${staminaPercentage}%` }}
+            ></div>
           </div>
         </div>
-      )}
+      </div>
       
-      {/* Active Upgrade Effects */}
-      {hasUpgrades && (
-        <div className="mt-4 border-t border-gray-700 pt-3">
-          <div className="text-green-400 text-xs uppercase tracking-wide mb-2">Active Bonuses</div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {upgradeEffects.debugRate.additive > 0 && (
-              <div className="text-blue-400">
-                +{upgradeEffects.debugRate.additive} click power
-              </div>
-            )}
-            {upgradeEffects.debugRate.multiplier > 1 && (
-              <div className="text-blue-400">
-                {upgradeEffects.debugRate.multiplier.toFixed(1)}× debug rate
-              </div>
-            )}
-            {upgradeEffects.codeQuality.additive > 0 && (
-              <div className="text-yellow-400">
-                +{upgradeEffects.codeQuality.additive} CQ/bug
-              </div>
-            )}
-            {upgradeEffects.codeQuality.multiplier > 1 && (
-              <div className="text-yellow-400">
-                {upgradeEffects.codeQuality.multiplier.toFixed(1)}× CQ gain
-              </div>
-            )}
-            {upgradeEffects.duckEfficiency.multiplier > 1 && (
-              <div className="text-purple-400">
-                {upgradeEffects.duckEfficiency.multiplier.toFixed(1)}× duck efficiency
-              </div>
-            )}
-            {upgradeEffects.special.multiplier > 1 && (
-              <div className="text-cyan-400">
-                {upgradeEffects.special.multiplier.toFixed(1)}× all bonuses
-              </div>
-            )}
+      {/* Balance Notice */}
+      {totalClickPower >= 10 && (
+        <div className="mt-4 text-center">
+          <div className="text-orange-400 text-xs">
+            ⚠️ Click power capped at {totalClickPower} for game balance
           </div>
         </div>
       )}

@@ -66,14 +66,14 @@ export const initialUpgrades: Upgrade[] = [
     id: 'premium-duck',
     type: 'duck',
     name: 'Premium Duck',
-    description: '2x efficiency with distinguished appearance. Adds 4 debug per manual click.',
-    cost: 5000,
+    description: '1.4x efficiency with distinguished appearance.',
+    cost: 25000,    // 5x increase from 5,000
     purchased: false,
     unlocked: false,
     effect: {
-      type: 'additive',
+      type: 'multiplier',
       target: 'debugRate',
-      value: 4
+      value: 1.4  // Changed from +4 additive to 1.4x multiplier
     },
     dependencies: []
   },
@@ -81,14 +81,14 @@ export const initialUpgrades: Upgrade[] = [
     id: 'quantum-duck',
     type: 'duck',
     name: 'Quantum Duck',
-    description: 'Handles paradoxes and quantum bugs. Adds 10 debug per manual click.',
-    cost: 10000,
+    description: 'Handles paradoxes and quantum bugs. 1.6x debug rate.',
+    cost: 100000,   // 10x increase from 10,000
     purchased: false,
     unlocked: false,
     effect: {
-      type: 'additive',
+      type: 'multiplier',
       target: 'debugRate',
-      value: 10
+      value: 1.6  // Changed from +10 additive to 1.6x multiplier
     },
     dependencies: []
   },
@@ -96,14 +96,14 @@ export const initialUpgrades: Upgrade[] = [
     id: 'cosmic-duck',
     type: 'duck',
     name: 'Cosmic Duck',
-    description: 'Universe-level debugging capabilities. Adds 25 debug per manual click.',
-    cost: 50000,
+    description: 'Universe-level debugging capabilities. 2x debug rate.',
+    cost: 500000,   // 10x increase from 50,000
     purchased: false,
     unlocked: false,
     effect: {
-      type: 'additive',
+      type: 'multiplier',
       target: 'debugRate',
-      value: 25
+      value: 2.0  // Changed from +25 additive to 2x multiplier
     },
     dependencies: []
   },

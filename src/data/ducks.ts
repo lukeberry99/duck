@@ -66,7 +66,7 @@ export const duckTypes = {
     description: '2x efficiency with distinguished appearance',
     specialization: 'Premium Debugging',
     baseDebugPower: 4,
-    baseCost: 5000,
+    baseCost: 25000,    // 5x increase from 5,000
     unlockCondition: { type: 'bugsFixed', value: 1000 },
     specialBonus: { type: 'efficiencyMultiplier', value: 2 },
     codeTypeSpecialty: 'mobile' as CodeType,
@@ -77,7 +77,7 @@ export const duckTypes = {
     description: 'Handles paradoxes and quantum bugs',
     specialization: 'Quantum Computing',
     baseDebugPower: 10,
-    baseCost: 10000,
+    baseCost: 100000,   // 10x increase from 10,000
     unlockCondition: { type: 'bugsFixed', value: 2500 },
     specialBonus: { type: 'quantumEntanglement', value: 0.05 },
     codeTypeSpecialty: 'aiml' as CodeType,
@@ -88,7 +88,7 @@ export const duckTypes = {
     description: 'Universe-level debugging capabilities',
     specialization: 'Cosmic Maintenance',
     baseDebugPower: 25,
-    baseCost: 50000,
+    baseCost: 500000,   // 10x increase from 50,000
     unlockCondition: { type: 'bugsFixed', value: 10000 },
     specialBonus: { type: 'universalDebugger', value: 1.5 },
     codeTypeSpecialty: undefined,
@@ -98,7 +98,19 @@ export const duckTypes = {
 
 export const getDuckCost = (type: DuckType, owned: number): number => {
   const baseCost = duckTypes[type].baseCost;
-  return Math.floor(baseCost * Math.pow(1.15, owned));
+  
+  // Different scaling for different duck types (based on balance recommendations)
+  const scalingFactors = {
+    rubber: 1.15,    // Gentle scaling for basic ducks
+    bath: 1.2,       // Moderate scaling
+    pirate: 1.25,    // 
+    fancy: 1.3,      //
+    premium: 1.4,    //
+    quantum: 1.6,    // Aggressive scaling for powerful ducks
+    cosmic: 2.0      // Extreme scaling for game-breaking ducks
+  };
+  
+  return Math.floor(baseCost * Math.pow(scalingFactors[type], owned));
 };
 
 export const isDuckUnlocked = (type: DuckType, gameState: { bugsFixed: number; codeQuality: number; achievements: { peakBugsFixed: number; peakCodeQuality: number; peakDebugRate: number } }): boolean => {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { GameState, GameActions, Duck, DuckType, LogEntry, CodeType, DebugSession } from '../types/game';
-import { calculateDebugRate, calculateOfflineProgress, canAffordUpgrade, calculateUpgradeEffects } from '../utils/calculations';
+import { calculateDebugRate, calculateOfflineProgress, canAffordUpgrade, calculateUpgradeEffects, calculateClickPower, getBugDifficulty } from '../utils/calculations';
 import { initialUpgrades } from '../data/upgrades';
 import { createDuck, getDuckCost, isDuckUnlocked } from '../data/ducks';
 import { 
@@ -69,7 +69,13 @@ const initialState: GameState = {
   activeBatchOperations: initialBatchOperations,
   performanceChallenges: initialPerformanceChallenges,
   currentCodeType: 'web',
-  completedChallenges: []
+  completedChallenges: [],
+  
+  // Balance fixes
+  clickStamina: 100,
+  maxClickStamina: 100,
+  staminaRegen: 1,
+  lastClickTime: 0
 };
 
 export const useGameStore = create<GameStore>()(
@@ -80,22 +86,31 @@ export const useGameStore = create<GameStore>()(
       // Core actions
       debugCode: () => {
         set((state) => {
-          const upgradeEffects = calculateUpgradeEffects(state.upgrades);
+          const staminaCost = 10;
+          const currentTime = Date.now();
           
-          // Calculate bugs fixed (base 1 + debug rate additives + multipliers)
-          const baseBugsFixed = 1;
-          const debugRateBonus = upgradeEffects.debugRate.additive;
-          const debugRateMultiplier = upgradeEffects.debugRate.multiplier;
-          const specialMultiplier = upgradeEffects.special.multiplier;
+          // Check stamina
+          if (state.clickStamina < staminaCost) {
+            return state; // Not enough stamina
+          }
           
-          const bugsFixed = Math.floor((baseBugsFixed + debugRateBonus) * debugRateMultiplier * specialMultiplier);
+          // Check click cooldown based on bug difficulty
+          const difficulty = getBugDifficulty(state.bugsFixed);
+          if (currentTime - state.lastClickTime < difficulty) {
+            return state; // Still on cooldown
+          }
+          
+          // Calculate click power with caps
+          const bugsFixed = calculateClickPower(state.upgrades);
           const newBugsFixed = state.bugsFixed + bugsFixed;
           
           // Calculate code quality gain (base 5 CQ per bug + additives + multipliers + prestige)
+          const upgradeEffects = calculateUpgradeEffects(state.upgrades);
           const baseCQPerBug = 5;
           const codeQualityAdditive = upgradeEffects.codeQuality.additive;
           const codeQualityMultiplier = upgradeEffects.codeQuality.multiplier;
           const prestigeMultipliers = calculatePrestigeMultipliers(state.prestigeUpgrades);
+          const specialMultiplier = upgradeEffects.special.multiplier;
           
           const codeQualityGain = Math.floor((baseCQPerBug + codeQualityAdditive) * codeQualityMultiplier * specialMultiplier * prestigeMultipliers.codeQuality);
           const newCodeQuality = state.codeQuality + (codeQualityGain * bugsFixed);
@@ -125,6 +140,8 @@ export const useGameStore = create<GameStore>()(
             codeQuality: newCodeQuality,
             achievements: newAchievements,
             logs: updatedLogs,
+            clickStamina: state.clickStamina - staminaCost,
+            lastClickTime: currentTime,
             lastUpdate: Date.now(),
           };
         });
@@ -457,12 +474,12 @@ export const useGameStore = create<GameStore>()(
       
       canRefactor: () => {
         const state = get();
-        return state.bugsFixed >= 1000;
+        return state.bugsFixed >= 25000;  // Increased from 1000 to 25000
       },
       
       refactor: () => {
         const state = get();
-        if (state.bugsFixed < 1000) return;
+        if (state.bugsFixed < 25000) return;  // Increased from 1000 to 25000
         
         const earnedPoints = calculateArchitecturePoints(state.bugsFixed);
         const prestigeMultipliers = calculatePrestigeMultipliers(state.prestigeUpgrades);
@@ -782,6 +799,10 @@ export const useGameStore = create<GameStore>()(
         performanceChallenges: state.performanceChallenges,
         currentCodeType: state.currentCodeType,
         completedChallenges: state.completedChallenges,
+        clickStamina: state.clickStamina,
+        maxClickStamina: state.maxClickStamina,
+        staminaRegen: state.staminaRegen,
+        lastClickTime: state.lastClickTime,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -795,6 +816,14 @@ export const useGameStore = create<GameStore>()(
               peakCodeQuality: state.codeQuality,
               peakDebugRate: state.debugRate,
             };
+          }
+          
+          // Ensure balance fix properties exist for backward compatibility
+          if (!state.clickStamina) {
+            state.clickStamina = 100;
+            state.maxClickStamina = 100;
+            state.staminaRegen = 1;
+            state.lastClickTime = 0;
           }
         }
       },

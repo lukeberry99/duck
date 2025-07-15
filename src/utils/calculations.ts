@@ -29,6 +29,8 @@ export const calculateUpgradeEffects = (upgrades: Upgrade[]): UpgradeEffects => 
     special: { additive: 0, multiplier: 1 }
   };
 
+  let multiplierCount = 0;
+
   upgrades.forEach(upgrade => {
     if (!upgrade.purchased) return;
 
@@ -38,7 +40,11 @@ export const calculateUpgradeEffects = (upgrades: Upgrade[]): UpgradeEffects => 
     if (upgrade.effect.type === 'additive') {
       effects[target].additive += upgrade.effect.value;
     } else if (upgrade.effect.type === 'multiplier') {
-      effects[target].multiplier *= upgrade.effect.value;
+      // Apply diminishing returns to multiplier stacking
+      const effectiveness = Math.pow(0.8, multiplierCount);
+      const adjustedValue = 1 + (upgrade.effect.value - 1) * effectiveness;
+      effects[target].multiplier *= adjustedValue;
+      multiplierCount++;
     }
   });
 
@@ -156,6 +162,36 @@ export const formatNumber = (num: number): string => {
   if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
   if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M';
   return (num / 1000000000).toFixed(1) + 'B';
+};
+
+export const calculateClickPower = (upgrades: Upgrade[]): number => {
+  const upgradeEffects = calculateUpgradeEffects(upgrades);
+  
+  // Calculate raw click power
+  const baseBugsFixed = 1;
+  const debugRateBonus = upgradeEffects.debugRate.additive;
+  const debugRateMultiplier = upgradeEffects.debugRate.multiplier;
+  const specialMultiplier = upgradeEffects.special.multiplier;
+  
+  const rawPower = (baseBugsFixed + debugRateBonus) * debugRateMultiplier * specialMultiplier;
+  
+  // Apply hard cap to prevent exponential growth
+  const hardCap = 10;
+  let cappedPower = Math.min(rawPower, hardCap);
+  
+  // Allow slow growth past cap with logarithmic scaling
+  if (rawPower > hardCap) {
+    const excess = rawPower - hardCap;
+    cappedPower = hardCap + Math.log10(excess + 1);
+  }
+  
+  return Math.floor(cappedPower);
+};
+
+export const getBugDifficulty = (bugsFixed: number): number => {
+  const baseTime = 1000; // 1 second base cooldown
+  const scalingFactor = Math.floor(bugsFixed / 1000);
+  return baseTime * Math.pow(1.1, scalingFactor);
 };
 
 export const formatRate = (rate: number): string => {

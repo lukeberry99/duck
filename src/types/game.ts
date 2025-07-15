@@ -104,6 +104,12 @@ export interface GameState {
   performanceChallenges: PerformanceChallenge[];
   currentCodeType: CodeType;
   completedChallenges: string[];
+  
+  // Balance fixes
+  clickStamina: number;
+  maxClickStamina: number;
+  staminaRegen: number;
+  lastClickTime: number;
 }
 
 export interface Duck {

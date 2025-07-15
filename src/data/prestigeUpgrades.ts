@@ -252,17 +252,16 @@ export const initialPrestigeUpgrades: PrestigeUpgrade[] = [
 
 // Architecture Points calculation
 export const calculateArchitecturePoints = (bugsFixed: number): number => {
-  if (bugsFixed < 1000) return 0;
+  if (bugsFixed < 25000) return 0;  // Increased from 1000 to 25000
   
-  // Base formula: sqrt(total_bugs_fixed) / 10
-  let points = Math.floor(Math.sqrt(bugsFixed) / 10);
+  // Base formula: sqrt(total_bugs_fixed) / 25 (reduced from /10)
+  let points = Math.floor(Math.sqrt(bugsFixed) / 25);
   
-  // Bonus multipliers for milestones
-  if (bugsFixed >= 100000) points *= 2;
-  else if (bugsFixed >= 50000) points *= 1.8;
-  else if (bugsFixed >= 25000) points *= 1.6;
-  else if (bugsFixed >= 10000) points *= 1.4;
-  else if (bugsFixed >= 5000) points *= 1.2;
+  // Bonus multipliers for milestones (reduced from original values)
+  if (bugsFixed >= 500000) points *= 1.5;      // Reduced from 2x
+  else if (bugsFixed >= 100000) points *= 1.3; // Reduced from 1.8x
+  else if (bugsFixed >= 50000) points *= 1.2;  // Reduced from 1.6x
+  else if (bugsFixed >= 25000) points *= 1.1;  // Reduced from 1.4x (at 10000)
   
   return Math.floor(points);
 };
