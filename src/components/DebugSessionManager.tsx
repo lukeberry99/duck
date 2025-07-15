@@ -1,6 +1,7 @@
 import { useGameStore } from '../stores/gameStore';
 import { codeTypeConfigs } from '../data/codeTypes';
 import { calculateDuckEfficiency } from '../data/codeTypes';
+import type { CodeType } from '../types/game';
 
 export default function DebugSessionManager() {
   const { 
@@ -34,7 +35,7 @@ export default function DebugSessionManager() {
     const duck = ducks.find(d => d.id === duckId);
     if (!duck) return '1.0x';
     
-    const efficiency = calculateDuckEfficiency(duck.codeTypeSpecialty, sessionCodeType as any);
+    const efficiency = calculateDuckEfficiency(duck.codeTypeSpecialty, sessionCodeType as CodeType);
     return `${efficiency.toFixed(1)}x`;
   };
 

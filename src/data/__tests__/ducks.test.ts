@@ -82,9 +82,9 @@ describe('Duck System', () => {
       expect(getDuckCost('bath', 0)).toBe(500);
       expect(getDuckCost('pirate', 0)).toBe(1000);
       expect(getDuckCost('fancy', 0)).toBe(2500);
-      expect(getDuckCost('premium', 0)).toBe(5000);
-      expect(getDuckCost('quantum', 0)).toBe(10000);
-      expect(getDuckCost('cosmic', 0)).toBe(50000);
+      expect(getDuckCost('premium', 0)).toBe(25000);
+      expect(getDuckCost('quantum', 0)).toBe(100000);
+      expect(getDuckCost('cosmic', 0)).toBe(500000);
     });
 
     it('should scale cost with owned count', () => {
@@ -101,7 +101,7 @@ describe('Duck System', () => {
       const bathCost1 = getDuckCost('bath', 1);
       
       expect(bathCost0).toBe(500);
-      expect(bathCost1).toBe(575); // 500 * 1.15^1
+      expect(bathCost1).toBe(600); // 500 * 1.2^1
     });
 
     it('should handle large owned counts', () => {

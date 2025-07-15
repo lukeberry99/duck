@@ -10,34 +10,30 @@ import type { PrestigeUpgrade } from '../../types/game';
 
 describe('Prestige System', () => {
   describe('calculateArchitecturePoints', () => {
-    it('should return 0 for less than 1000 bugs', () => {
-      expect(calculateArchitecturePoints(999)).toBe(0);
+    it('should return 0 for less than 25000 bugs', () => {
+      expect(calculateArchitecturePoints(24999)).toBe(0);
       expect(calculateArchitecturePoints(500)).toBe(0);
       expect(calculateArchitecturePoints(0)).toBe(0);
     });
 
     it('should calculate base points using sqrt formula', () => {
-      expect(calculateArchitecturePoints(1000)).toBe(3); // sqrt(1000) / 10 = 3.16..., floored = 3
-      expect(calculateArchitecturePoints(2500)).toBe(5); // sqrt(2500) / 10 = 5
-      // Note: 10000 triggers the 1.4x multiplier, so base 10 becomes 14
-      expect(calculateArchitecturePoints(4999)).toBe(7); // sqrt(4999) / 10 = 7.07..., floored = 7 (no multiplier)
+      expect(calculateArchitecturePoints(25000)).toBe(6); // sqrt(25000) / 25 = 6.32..., floored = 6, then * 1.1 = 6.6, floored = 6
+      expect(calculateArchitecturePoints(30000)).toBe(6); // sqrt(30000) / 25 = 6.93..., floored = 6, then * 1.1 = 6.6, floored = 6
+      expect(calculateArchitecturePoints(40000)).toBe(8); // sqrt(40000) / 25 = 8, then * 1.1 = 8.8, floored = 8
     });
 
     it('should apply milestone multipliers', () => {
-      // 5000 bugs: sqrt(5000) / 10 = 7.07..., floored = 7, then * 1.2 = 8.4, floored = 8
-      expect(calculateArchitecturePoints(5000)).toBe(8);
+      // 30000 bugs: sqrt(30000) / 25 = 6.93..., floored = 6, then * 1.1 = 6.6, floored = 6
+      expect(calculateArchitecturePoints(30000)).toBe(6);
       
-      // 10000 bugs: sqrt(10000) / 10 = 10, then * 1.4 = 14
-      expect(calculateArchitecturePoints(10000)).toBe(14);
+      // 50000 bugs: sqrt(50000) / 25 = 8.94..., floored = 8, then * 1.2 = 9.6, floored = 9
+      expect(calculateArchitecturePoints(50000)).toBe(9);
       
-      // 25000 bugs: sqrt(25000) / 10 = 15.8..., floored = 15, then * 1.6 = 24
-      expect(calculateArchitecturePoints(25000)).toBe(24);
+      // 100000 bugs: sqrt(100000) / 25 = 12.65..., floored = 12, then * 1.3 = 15.6, floored = 15
+      expect(calculateArchitecturePoints(100000)).toBe(15);
       
-      // 50000 bugs: sqrt(50000) / 10 = 22.36..., floored = 22, then * 1.8 = 39.6, floored = 39
-      expect(calculateArchitecturePoints(50000)).toBe(39);
-      
-      // 100000 bugs: sqrt(100000) / 10 = 31.6..., floored = 31, then * 2 = 62
-      expect(calculateArchitecturePoints(100000)).toBe(62);
+      // 500000 bugs: sqrt(500000) / 25 = 28.28..., floored = 28, then * 1.5 = 42
+      expect(calculateArchitecturePoints(500000)).toBe(42);
     });
 
     it('should handle large bug counts', () => {
@@ -48,10 +44,10 @@ describe('Prestige System', () => {
     });
 
     it('should apply highest applicable multiplier', () => {
-      // Just over 100000 should get 2x multiplier
-      const result = calculateArchitecturePoints(100001);
-      const basePoints = Math.floor(Math.sqrt(100001) / 10);
-      expect(result).toBe(Math.floor(basePoints * 2));
+      // Just over 500000 should get 1.5x multiplier
+      const result = calculateArchitecturePoints(500001);
+      const basePoints = Math.floor(Math.sqrt(500001) / 25);
+      expect(result).toBe(Math.floor(basePoints * 1.5));
     });
   });
 

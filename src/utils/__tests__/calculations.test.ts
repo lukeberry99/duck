@@ -151,7 +151,7 @@ describe('calculateDebugRate', () => {
       createMockUpgrade('test2', true, 'debugRate', 'multiplier', 1.5)
     ];
     const result = calculateDebugRate(ducks, upgrades);
-    expect(result).toBe(15); // 5 * 2 * 1.5
+    expect(result).toBe(14); // 5 * 2 * 1.4 (second multiplier has 80% effectiveness due to diminishing returns)
   });
 });
 
