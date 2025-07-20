@@ -1,0 +1,33 @@
+name: Deploy to ArgoCD
+
+on:
+  workflow_run:
+    workflows: ["CI/CD"]
+    types:
+      - completed
+    branches: [main]
+
+jobs:
+  update-gitops:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    steps:
+      - name: Update GitOps repository
+        run: |
+          # Clone GitOps repository
+          git clone https://${{ secrets.GITOPS_TOKEN }}@github.com/lukeberry99/gitops-webapps.git
+          cd gitops-webapps
+          
+          # Update image tag
+          APP_NAME=duck
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          IMAGE_TAG="${{ github.event.workflow_run.head_branch }}-${SHORT_SHA}"
+          sed -i "s/tag: .*/tag: \"${IMAGE_TAG}\"/" apps/${APP_NAME}/values.yaml
+          
+          # Commit and push changes
+          git config user.name "argocd"
+          git config user.email "argocd@lberry.dev"
+          git add apps/${APP_NAME}/values.yaml
+          git commit -m "Update ${APP_NAME} to ${IMAGE_TAG}"
+          git push
+
